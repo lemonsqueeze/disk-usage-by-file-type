@@ -27,11 +27,37 @@ collect_file_types()
     done   
 }
 
+
+disk_usage_for_type()
+{
+    perl <(cat <<'EOF'
+#!/usr/bin/perl
+
+my $verbose = ($ARGV[0] eq "-v");
+
+my $total = 0;
+foreach my $file (<STDIN>)
+{
+    chomp($file);
+    my @st = stat($file);
+    my $size_kb = $st[7] / 1024;
+    $total += $size_kb;
+    if ($verbose)
+    { printf("%i: $file\n", $size_kb); }
+}
+
+if (!$verbose)
+{ printf("%i Mb\n", $total / 1024); }
+EOF
+) "$@"
+
+}
+
 print_summary()
 {
     for f in "$dir"/* ; do
 	g=`echo "$f" | sed -e "s|$dir/||"`
-	echo `./disk_usage_for_type < "$f"` ": $g" 
+	echo `disk_usage_for_type < "$f"` ": $g" 
     done
 }
 
@@ -50,7 +76,7 @@ fi
 
 if [ "$1" = "-d" ]; then   
     for f in "$dir"/*$2*; do
-	./disk_usage_for_type -v < "$f"
+	disk_usage_for_type -v < "$f"
     done
     exit 0
 fi
